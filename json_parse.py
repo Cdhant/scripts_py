@@ -1,42 +1,37 @@
 import os
 import json
 
-all_file = []
+all_files = []
 messages = []
-for dirname, _, filenames in os.walk('./inbox'):
-    for filename in filenames:
-        # print(os.path.join(dirname, filename))
-        extention = os.path.splitext(os.path.join(dirname, filename))[1]
-        if (extention == '.json'):
-            all_file.append(os.path.join(dirname, filename))
-            # print(extention)
-    # print(filenames)
-# print(all_file)
-for file in all_file:
-    data = json.load(open(file))
-    print(data["participants"][0]["name"].encode('latin-1').decode('utf-8'))
-    # print(data["participants"][1]["name"].encode('latin-1').decode('utf-8'))
-    messages.insert(0,data["participants"][0]["name"].encode('latin-1').decode('utf-8') +"\n")
 
-    messages.reverse()
+# Recursively search for JSON files in the "inbox" directory
+for root, dirs, files in os.walk('./inbox'):
+    for file in files:
+        if file.endswith('.json'):
+            all_files.append(os.path.join(root, file))
 
-    print(data["messages"])
-    for message in data["messages"]:
-    # if reverse_message:
-        # for message in reverse_message:    
-        if "content" in message:
-            # print(message["sender_name"].encode('latin-1').decode('utf-8'))
-            if message["sender_name"].encode('latin-1').decode('utf-8') == "बुटवल उप-महानगरपालिका, रुपन्देही, Butwal Sub-Metropolitan City, Rupandehi":
-                sender = "S"
-            else:
-                sender = "U"
-            print(sender, ":", message["content"].encode('latin-1').decode('utf-8'))
+# Process each JSON file
+for file in all_files:
+    with open(file, 'r') as json_file:
+        data = json.load(json_file)
         
-            messages.append(sender + " : " + message["content"].encode('latin-1').decode('utf-8')+"\n")
-    print("----------------------------------------------------")
-    messages.append("\n ----------------------------------------------------\n\n")
-    with open('herveda_dump.txt','w') as f:
-        print(messages)
-        for item in messages:
-            f.write(item)
+        # Extract sender name and add it to the messages list
+        sender_name = data["participants"][0]["name"]
+        messages.append(sender_name + "\n")
+        
+        # Sort messages based on timestamp
+        sorted_messages = sorted(data["messages"], key=lambda x: x["timestamp_ms"])
+        
+        # Iterate over sorted messages
+        for message in sorted_messages:
+            if "content" in message:
+                sender = "S" if message["sender_name"] == "बुटवल उप-महानगरपालिका, रुपन्देही, Butwal Sub-Metropolitan City, Rupandehi" else "U"
+                content = message["content"]
+                print(sender, ":", content)
+                messages.append(sender + " : " + content + "\n")
+        
+        messages.append("\n----------------------------------------------------\n\n")
 
+# Write messages to the output file
+with open('herveda_dump.txt', 'w', encoding='utf-8') as f:
+    f.writelines(messages)
